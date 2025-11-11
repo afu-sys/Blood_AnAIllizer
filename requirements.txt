@@ -4,10 +4,15 @@ Flask-CORS
 gunicorn
 python-dotenv
 
-# Nuevas dependencias (Lógica de IA y PDF)
+# Dependencias de Base de Datos y Auth
+Flask-SQLAlchemy
+Flask-Migrate
+Flask-Bcrypt
+Flask-JWT-Extended
+psycopg2-binary
+
+# Dependencias de Lógica (IA y PDF)
 pdfplumber
 pandas
 google-genai==1.49.0
 reportlab
-
-##
