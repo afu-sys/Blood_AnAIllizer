@@ -18,6 +18,8 @@ from pdf_processor import extraer_texto_de_pdf
 from data_extractor import parsear_lineas_a_dataframe, clasificar_resultados
 from report_generator import generar_reporte_ia, create_medical_report_pdf
 
+import fitz
+
 load_dotenv()
 app = Flask(__name__)
 CORS(app)
@@ -145,21 +147,24 @@ def save_timeline():
 @app.route('/api/analyze', methods=['POST'])
 @jwt_required()
 def analyze_reports():
+    # Eliminamos el logger.setLevel('DEBUG') para evitar logs excesivos en producción
+    
     try:
         if 'files' not in request.files:
             return jsonify({'error': 'No files provided'}), 400
         
         files = request.files.getlist('files')
         report_date_str = request.form.get('date', datetime.now(timezone.utc).strftime('%Y-%m-%d'))
-        
         file = files[0] # Just grab the first file
         
         with tempfile.TemporaryDirectory() as tmp_dir:
             pdf_path = os.path.join(tmp_dir, secure_filename(file.filename))
             file.save(pdf_path)
             
-            # Step 1: Read text from the PDF
-            lineas = extraer_texto_de_pdf(pdf_path)
+            # --- Lógica de Extracción Única y Robustez ---
+            # Llamamos a la función única. El manejo de errores (fitz/pdfplumber)
+            # ahora está 100% dentro de pdf_processor.py.
+            lineas = extraer_texto_de_pdf(pdf_path) 
             
             # Step 2: Turn text into data (pandas)
             df = parsear_lineas_a_dataframe(lineas)
@@ -181,7 +186,8 @@ def analyze_reports():
         })
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        # Esto es lo que verá el usuario, si algo falla
+        return jsonify({'error': f'Analysis failed due to: {str(e)}'}), 500
 
 # The REAL PDF generator endpoint
 @app.route('/api/generate-pdf', methods=['POST'])

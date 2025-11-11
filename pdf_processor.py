@@ -2,25 +2,55 @@ import pdfplumber
 import fitz  # PyMuPDF
 import unicodedata
 import re
+        
 
+# Esta función de extracción ahora es mucho más robusta
 def extraer_texto_de_pdf(ruta_pdf):
     """
-    Extrae todo el texto de un archivo PDF.
-    Toma la lógica de la celda 2.
+    Extrae todo el texto de un archivo PDF usando PyMuPDF (fitz) por su robustez.
+    Si falla, intenta con pdfplumber como respaldo.
     """
     all_text = ""
-    with pdfplumber.open(ruta_pdf) as pdf:
-        for page in pdf.pages:
-            text = page.extract_text()
+    
+    # 1. Intento principal (PyMuPDF - más robusto para texto)
+    try:
+        doc = fitz.open(ruta_pdf)
+        for page in doc:
+            # Normalizar el texto (importante para que el regex funcione)
+            text = unicodedata.normalize("NFKD", page.get_text()).strip()
             if text:
                 all_text += text + "\n"
-    
-    return all_text.split("\n")
+        doc.close()
+        
+        if len(all_text) < 50: # Si extrajo muy poco, es un fallo
+            raise Exception("PyMuPDF extracted insufficient data.")
+            
+        return all_text.split("\n")
+
+    except Exception as e:
+        print(f"Alerta: PyMuPDF falló ({e}). Intentando con pdfplumber...")
+        
+        # 2. Intento de respaldo (pdfplumber)
+        try:
+            with pdfplumber.open(ruta_pdf) as pdf:
+                for page in pdf.pages:
+                    text = page.extract_text(x_tolerance=1, y_tolerance=1) # A veces mejoran la extracción
+                    if text:
+                        all_text += text + "\n"
+            
+            if len(all_text) < 50:
+                raise Exception("Ambos extractores fallaron al obtener texto suficiente.")
+                
+            return all_text.split("\n")
+            
+        except Exception as e_final:
+            print(f"Error final: Ambos métodos fallaron. {e_final}")
+            raise e_final
+            
 
 def _generate_variants(name: str):
     """
-    Crea variantes de un nombre para buscar en el PDF.
-    Toma la lógica de la celda 5.
+    Crea variantes de un nombre para buscar en el PDF. (Lógica de pintar_pdf)
     """
     def deaccent(s):
         s2 = unicodedata.normalize("NFKD", s)
@@ -43,9 +73,9 @@ def _generate_variants(name: str):
 
 def pintar_pdf(pdf_in_path, pdf_out_path, df):
     """
-    Crea un nuevo PDF con los resultados resaltados.
-    Toma la lógica de la celda 5.
+    Crea un nuevo PDF con los resultados resaltados. (Función de la celda 5)
     """
+    # ... (código sin cambios, usa fitz y es solo para descargar) ...
     doc = fitz.open(pdf_in_path)
     highlighted_tests = set()
 
