@@ -56,7 +56,7 @@ def analyze_reports():
                 return jsonify({'error': 'No data could be extracted from this PDF.'}), 400
         
         # Convert the data to JSON for our frontend
-        results_json = json.loads(df.to_json(orient='records'))
+        results_json = df.to_dict(orient='records')
         
         return jsonify({
             'success': True,

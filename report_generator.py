@@ -13,14 +13,14 @@ def _configurar_cliente_gemini():
     if not api_key:
         raise ValueError("No se encontró la GEMINI_API_KEY.")
     
-    # La forma moderna de configurar:
-    # genai.configure(api_key=api_key) 
-    # Pero usaremos la forma de cliente directo del notebook que funcionaba:
+    # Esta línea asegura que la clave se establezca para la API de Gemini
     os.environ["GEMINI_API_KEY"] = api_key 
     return genai.Client()
 
 def _lab_results_to_text(df):
     lines = []
+    # Aquí es donde aplicamos la seguridad: usamos .to_dict() para la fila si fuera necesario, 
+    # pero el código que tienes es estable si las filas contienen los tipos esperados.
     for _, row in df.iterrows():
         line = (
             f"{row['Test']}: {row['Value']} {row['Unit']} "
@@ -31,7 +31,7 @@ def _lab_results_to_text(df):
     return "Here are the patient's laboratory results:\n\n" + "\n".join(lines)
 
 def _generate_doctor_prompt(content):
-    # Prompt de doctor (celda 57)
+    # Prompt de doctor
     return f"""
 You are a licensed medical doctor specializing in clinical laboratory interpretation.
 Below are the patient's blood test results:
@@ -52,7 +52,7 @@ Please write a concise medical report that follows these guidelines:
 """
 
 def _generate_patient_prompt(content):
-    # Prompt de paciente (celda 63)
+    # Prompt de paciente
     return f"""
 You are a friendly and empathetic health advisor. Your goal is to help a person
 understand their lab results in a simple, clear, and positive way.
@@ -85,7 +85,8 @@ Please write a summary for the patient following these guidelines:
 
 def generar_reporte_ia(df, tipo_prompt):
     client = _configurar_cliente_gemini()
-    content = _lab_results_to_text(df)
+    # Usamos la versión de prompt que se adapte al tipo
+    content = _lab_results_to_text(df) 
     
     if tipo_prompt == "doctor":
         prompt = _generate_doctor_prompt(content)
@@ -94,7 +95,6 @@ def generar_reporte_ia(df, tipo_prompt):
     else:
         raise ValueError("Tipo de prompt no válido. Debe ser 'doctor' o 'paciente'.")
         
-    # Adaptación de la celda 59/60
     response = client.models.generate_content(
         model="gemini-2.5-flash",  
         contents=prompt
@@ -103,7 +103,7 @@ def generar_reporte_ia(df, tipo_prompt):
     return response.text
 
 def create_medical_report_pdf(output_filename, report_text, image_path=None):
-    # Adaptación de la celda 62 (Reportlab)
+    # Lógica de Reportlab para crear el PDF final
     doc = SimpleDocTemplate(
         output_filename,
         pagesize=letter,
@@ -118,6 +118,7 @@ def create_medical_report_pdf(output_filename, report_text, image_path=None):
 
     Story = []
 
+    # Se mantiene la traducción de **Markdown** a etiquetas <b>HTML para Reportlab
     report_text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', report_text)
     blocks = report_text.strip().split('\n\n')
 
