@@ -6,13 +6,9 @@ from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
-
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from flask_bcrypt import Bcrypt
-from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, JWTManager
 from datetime import datetime, timezone
 
+# Importamos la lógica que sí usamos
 from pdf_processor import extraer_texto_de_pdf
 from data_extractor import parsear_lineas_a_dataframe, clasificar_resultados
 from report_generator import generar_reporte_ia, create_medical_report_pdf
@@ -21,119 +17,11 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
-app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-db = SQLAlchemy(app)
-migrate = Migrate(app, db)
-bcrypt = Bcrypt(app)
-jwt = JWTManager(app)
-
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    name = db.Column(db.String(100), nullable=True)
-    password_hash = db.Column(db.String(128), nullable=False)
-    created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
-    timelines = db.relationship('Timeline', backref='user', lazy=True)
-
-class Timeline(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.DateTime, nullable=False)
-    results = db.Column(db.JSON, nullable=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'date': self.date.isoformat(),
-            'results': self.results,
-            'user_id': self.user_id
-        }
-
-@app.route('/api/users/register', methods=['POST'])
-def register_user():
-    try:
-        data = request.json
-        username = data.get('username')
-        email = data.get('email')
-        name = data.get('name')
-        password = data.get('password')
-
-        if not username or not email or not password:
-            return jsonify({'error': 'Missing required fields'}), 400
-        if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
-            return jsonify({'error': 'User or email already exists'}), 409
-
-        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        new_user = User(username=username, email=email, name=name, password_hash=hashed_password)
-        db.session.add(new_user)
-        db.session.commit()
-
-        access_token = create_access_token(identity={'id': new_user.id, 'username': new_user.username})
-        return jsonify({
-            'success': True,
-            'user': {'id': new_user.id, 'username': new_user.username, 'email': new_user.email},
-            'access_token': access_token
-        }), 201
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/users/login', methods=['POST'])
-def login_user():
-    try:
-        data = request.json
-        username = data.get('username')
-        password = data.get('password')
-
-        user = User.query.filter_by(username=username).first()
-
-        if user and bcrypt.check_password_hash(user.password_hash, password):
-            access_token = create_access_token(identity={'id': user.id, 'username': user.username})
-            return jsonify({
-                'success': True,
-                'user': {'id': user.id, 'username': user.username, 'email': user.email},
-                'access_token': access_token
-            })
-        
-        return jsonify({'error': 'Invalid credentials'}), 401
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/timeline', methods=['GET'])
-#@jwt_required()
-def get_timeline():
-    current_user_identity = get_jwt_identity()
-    user_id = current_user_identity['id']
-    timeline_entries = Timeline.query.filter_by(user_id=user_id).order_by(Timeline.date.asc()).all()
-    timeline_data = [entry.to_dict() for entry in timeline_entries]
-    return jsonify({'success': True, 'timeline': timeline_data})
-
-@app.route('/api/save-timeline', methods=['POST'])
-#@jwt_required()
-def save_timeline():
-    try:
-        current_user_identity = get_jwt_identity()
-        user_id = current_user_identity['id']
-        data = request.json
-        
-        new_entry = Timeline(
-            date=datetime.fromisoformat(data.get('date')),
-            results=data.get('results'),
-            user_id=user_id
-        )
-        db.session.add(new_entry)
-        db.session.commit()
-        return jsonify({'success': True, 'message': 'Timeline saved', 'entry': new_entry.to_dict()})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+# Ya no necesitamos configuración de BD o JWT
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'un-secreto-de-respaldo')
 
 def calculate_summary_from_df(df):
+    """ Función de resumen (corregida para JSON) """
     status_counts = df['Status'].value_counts()
     return {
         'normal': int(status_counts.get('Normal', 0)),
@@ -141,8 +29,8 @@ def calculate_summary_from_df(df):
     }
 
 @app.route('/api/analyze', methods=['POST'])
-#@jwt_required()
 def analyze_reports():
+    """ Endpoint principal: Recibe un PDF y devuelve el análisis JSON """
     try:
         if 'files' not in request.files:
             return jsonify({'error': 'No files provided'}), 400
@@ -155,15 +43,19 @@ def analyze_reports():
             pdf_path = os.path.join(tmp_dir, secure_filename(file.filename))
             file.save(pdf_path)
             
+            # 1. Extraer
             lineas = extraer_texto_de_pdf(pdf_path) 
             
+            # 2. Parsear
             df = parsear_lineas_a_dataframe(lineas)
             
+            # 3. Clasificar
             if not df.empty:
                 df = clasificar_resultados(df)
             else:
                 return jsonify({'error': 'No data could be extracted from this PDF.'}), 400
         
+        # 4. Convertir a JSON (con la corrección de int64)
         results_json = json.loads(df.to_json(orient='records'))
         
         return jsonify({
@@ -177,8 +69,8 @@ def analyze_reports():
         return jsonify({'error': f'Analysis failed due to: {str(e)}'}), 500
     
 @app.route('/api/generate-pdf', methods=['POST'])
-#@jwt_required()
 def generate_pdf():
+    """ Endpoint de PDF: Recibe JSON y devuelve un PDF """
     try:
         data = request.json
         report_type = data.get('type', 'patient')
@@ -189,8 +81,10 @@ def generate_pdf():
         if df.empty:
             return jsonify({'error': 'No results to generate report from'}), 400
 
+        # 1. Generar texto con IA
         report_text = generar_reporte_ia(df, report_type)
         
+        # 2. Crear el archivo PDF
         with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_pdf:
             create_medical_report_pdf(temp_pdf.name, report_text)
             temp_pdf_path = temp_pdf.name
@@ -206,6 +100,5 @@ def generate_pdf():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
+    # Ya no necesitamos 'with app.app_context(): db.create_all()'
     app.run(debug=True, port=5000)

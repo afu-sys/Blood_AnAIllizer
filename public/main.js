@@ -1,7 +1,7 @@
 // Global variables
 let uploadedFiles = [];
 let analysisResults = [];
-let timelineData = []; // Mantenemos timelineData para la visualización temporal, pero no se guarda en BD.
+let timelineData = []; // Se mantiene para la visualización temporal
 
 const API_BASE_URL = 'https://bloodanaillizer-production.up.railway.app/api';
 
@@ -12,16 +12,10 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeTypedText();
     initializeFileUpload();
     initializeScrollAnimations();
-    // 🗑️ Eliminado: loadUserData() y la lógica de autenticación
-    
-    // Asocia la función processReports al botón 'Analyze Reports'
-    const analyzeButton = document.querySelector('button[onclick="processReports()"]');
-    if (analyzeButton) {
-        analyzeButton.addEventListener('click', processReports);
-    }
+    // No hay loadUserData()
 });
 
-// Initialize animations (mantener)
+// Initialize animations
 function initializeAnimations() {
     const featureCards = document.querySelectorAll('.feature-card');
     featureCards.forEach((card, index) => {
@@ -30,7 +24,7 @@ function initializeAnimations() {
     });
 }
 
-// Initialize floating particles (mantener)
+// Initialize floating particles
 function initializeParticles() {
     const container = document.getElementById('particles-container');
     const particleCount = 50;
@@ -45,7 +39,7 @@ function initializeParticles() {
     }
 }
 
-// Initialize typed text animation (mantener)
+// Initialize typed text animation
 function initializeTypedText() {
     const typed = new Typed('#typed-text', {
         strings: [
@@ -63,7 +57,7 @@ function initializeTypedText() {
     });
 }
 
-// Initialize file upload functionality (mantener)
+// Initialize file upload functionality
 function initializeFileUpload() {
     const uploadArea = document.getElementById('upload-area');
     const fileInput = document.getElementById('file-input');
@@ -90,7 +84,7 @@ function initializeFileUpload() {
     });
 }
 
-// Handle file uploads (mantener)
+// Handle file uploads
 function handleFiles(files) {
     const uploadedFilesContainer = document.getElementById('uploaded-files');
     
@@ -116,13 +110,13 @@ function handleFiles(files) {
     });
 }
 
-// Remove uploaded file (mantener)
+// Remove uploaded file
 function removeFile(index) {
     uploadedFiles.splice(index, 1);
     refreshUploadedFiles();
 }
 
-// Refresh uploaded files display (mantener)
+// Refresh uploaded files display
 function refreshUploadedFiles() {
     const container = document.getElementById('uploaded-files');
     container.innerHTML = '';
@@ -144,10 +138,8 @@ function refreshUploadedFiles() {
     });
 }
 
-// Process reports (MODIFICADA: SIN TOKEN NI COMPROBACIÓN DE USUARIO)
+// Process reports (MODIFICADO: SIN TOKEN)
 async function processReports() {
-    // 🗑️ Eliminado: Comprobación de token y login
-    
     if (uploadedFiles.length === 0) {
         showNotification('Please upload at least one PDF file', 'warning');
         return;
@@ -168,7 +160,7 @@ async function processReports() {
 
         const response = await fetch(`${API_BASE_URL}/analyze`, {
             method: 'POST',
-            // 🗑️ Eliminado: headers con 'Authorization': `Bearer ${token}`
+            // No hay cabecera 'Authorization'
             body: formData
         });
 
@@ -178,7 +170,6 @@ async function processReports() {
             analysisResults = data.results;
             displayResults(data.results);
             updateTimeline(data.results, data.report_date);
-            // 🗑️ Eliminado: saveTimelineData() - ya no guardamos en la DB
             showNotification('Reports analyzed successfully!', 'success');
         } else {
             showNotification(data.error || 'Error processing reports. Check your PDF format.', 'error');
@@ -192,23 +183,7 @@ async function processReports() {
     }
 }
 
-// Generate mock analysis results (mantener)
-function generateMockResults() {
-    const biomarkers = [
-        { test: 'Glucose', value: 95, unit: 'mg/dL', refLow: 70, refHigh: 100, status: 'Normal' },
-        { test: 'Cholesterol Total', value: 185, unit: 'mg/dL', refLow: 0, refHigh: 200, status: 'Normal' },
-        { test: 'Hemoglobin', value: 14.2, unit: 'g/dL', refLow: 12, refHigh: 16, status: 'Normal' },
-        { test: 'Platelets', value: 275, unit: 'K/uL', refLow: 150, refHigh: 400, status: 'Normal' },
-        { test: 'White Blood Cells', value: 7.8, unit: 'K/uL', refLow: 4.5, refHigh: 11, status: 'Normal' },
-        { test: 'Creatinine', value: 0.9, unit: 'mg/dL', refLow: 0.6, refHigh: 1.2, status: 'Normal' },
-        { test: 'HDL Cholesterol', value: 52, unit: 'mg/dL', refLow: 40, refHigh: 60, status: 'Near' },
-        { test: 'LDL Cholesterol', value: 115, unit: 'mg/dL', refLow: 0, refHigh: 100, status: 'High' }
-    ];
-    
-    return biomarkers;
-}
-
-// Display analysis results (mantener)
+// Display analysis results
 function displayResults(results) {
     const container = document.getElementById('results-container');
     
@@ -274,7 +249,7 @@ function displayResults(results) {
     `;
 }
 
-// Calculate summary statistics (mantener)
+// Calculate summary statistics
 function calculateSummary(results) {
     const summary = {
         normal: results.filter(r => r.status === 'Normal').length,
@@ -285,7 +260,7 @@ function calculateSummary(results) {
     return summary;
 }
 
-// Get status color class (mantener)
+// Get status color class
 function getStatusColor(status) {
     switch (status) {
         case 'Normal':
@@ -300,7 +275,7 @@ function getStatusColor(status) {
     }
 }
 
-// Update timeline (mantener para VISUALIZACIÓN TEMPORAL)
+// Update timeline (para visualización temporal)
 function updateTimeline(results, date) {
     const timelineItem = {
         date: date,
@@ -315,7 +290,7 @@ function updateTimeline(results, date) {
     updateChart();
 }
 
-// Display timeline (mantener para VISUALIZACIÓN TEMPORAL)
+// Display timeline (para visualización temporal)
 function displayTimeline() {
     const container = document.getElementById('timeline-items');
     
@@ -349,22 +324,20 @@ function displayTimeline() {
     }, 100);
 }
 
-// Update chart (mantener para VISUALIZACIÓN TEMPORAL)
+// Update chart (para visualización temporal)
 function updateChart() {
     const canvas = document.getElementById('timeline-chart');
+    if (!canvas) return; // Asegurarse de que el canvas existe
     const ctx = canvas.getContext('2d');
     
-    // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     if (timelineData.length < 2) return;
     
-    // Simple line chart implementation
     const padding = 40;
     const width = canvas.width - 2 * padding;
     const height = canvas.height - 2 * padding;
     
-    // Draw axes
     ctx.strokeStyle = '#e5e7eb';
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -373,7 +346,6 @@ function updateChart() {
     ctx.lineTo(canvas.width - padding, canvas.height - padding);
     ctx.stroke();
     
-    // Draw data points
     const selectedBiomarker = document.getElementById('biomarker-select').value;
     const dataPoints = timelineData.map(item => {
         const biomarker = item.results.find(r => r.test.toLowerCase().includes(selectedBiomarker));
@@ -399,7 +371,6 @@ function updateChart() {
                 ctx.lineTo(x, y);
             }
             
-            // Draw point
             ctx.fillStyle = '#3b82f6';
             ctx.beginPath();
             ctx.arc(x, y, 5, 0, 2 * Math.PI);
@@ -410,7 +381,7 @@ function updateChart() {
     }
 }
 
-// View timeline details (mantener)
+// View timeline details
 function viewTimelineDetails(index) {
     const item = timelineData[index];
     displayResults(item.results);
@@ -418,7 +389,7 @@ function viewTimelineDetails(index) {
     scrollToSection('dashboard');
 }
 
-// Generate PDF report (MODIFICADA: SIN TOKEN)
+// Generate PDF report (MODIFICADO: SIN TOKEN)
 async function generatePDF(type) {
     if (analysisResults.length === 0) {
         showNotification('Analyze a report first.', 'warning');
@@ -432,7 +403,7 @@ async function generatePDF(type) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                // 🗑️ Eliminado: 'Authorization': `Bearer ${token}`
+                // No hay 'Authorization'
             },
             body: JSON.stringify({ type: type, results: analysisResults })
         });
@@ -456,23 +427,7 @@ async function generatePDF(type) {
     }
 }
 
-// 🗑️ ELIMINADAS: Las siguientes funciones ya no son necesarias:
-
-/*
-async function register() { ... }
-async function login() { ... }
-function updateUserInterface() { ... }
-function logout() { ... }
-function loadUserData() { ... }
-async function saveTimelineData(results, date) { ... }
-async function loadTimelineData() { ... }
-function openLoginModal() { ... }
-function closeLoginModal() { ... }
-function showRegisterForm() { ... }
-function showLoginForm() { ... }
-*/
-
-// Utility functions (mantener)
+// Utility functions
 function scrollToSection(sectionId) {
     const section = document.getElementById(sectionId);
     section.scrollIntoView({ behavior: 'smooth' });
@@ -539,7 +494,7 @@ function getNotificationIcon(type) {
     }
 }
 
-// Initialize scroll animations (mantener)
+// Initialize scroll animations
 function initializeScrollAnimations() {
     const observerOptions = {
         threshold: 0.1,
@@ -554,40 +509,19 @@ function initializeScrollAnimations() {
         });
     }, observerOptions);
     
-    // Observe timeline items
     document.querySelectorAll('.timeline-item').forEach(item => {
         observer.observe(item);
     });
     
-    // Observe feature cards
     document.querySelectorAll('.feature-card').forEach(card => {
         observer.observe(card);
     });
 }
 
-// Biomarker select change handler (mantener)
+// Biomarker select change handler
 document.addEventListener('DOMContentLoaded', function() {
     const biomarkerSelect = document.getElementById('biomarker-select');
     if (biomarkerSelect) {
         biomarkerSelect.addEventListener('change', updateChart);
     }
 });
-
-// Close modal when clicking outside (MODIFICADA: QUITAR REFERENCIA A MODALES)
-/*
-document.addEventListener('click', function(e) {
-    const modal = document.getElementById('login-modal');
-    if (e.target === modal) {
-        closeLoginModal();
-    }
-});
-*/
-
-// Keyboard shortcuts (MODIFICADA: QUITAR REFERENCIA A MODALES)
-/*
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        closeLoginModal();
-    }
-});
-*/
