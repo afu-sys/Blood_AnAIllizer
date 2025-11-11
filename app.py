@@ -7,6 +7,7 @@ from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 from datetime import datetime, timezone
+import traceback
 
 # Importamos la lógica que sí usamos
 from pdf_processor import extraer_texto_de_pdf
@@ -79,8 +80,8 @@ def analyze_reports():
         return jsonify({'error': f'Analysis failed due to: {str(e)}'}), 500
     
 @app.route('/api/generate-pdf', methods=['POST'])
+#@jwt_required()
 def generate_pdf():
-    """ Endpoint de PDF: Recibe JSON y devuelve un PDF """
     try:
         data = request.json
         report_type = data.get('type', 'patient')
@@ -91,10 +92,8 @@ def generate_pdf():
         if df.empty:
             return jsonify({'error': 'No results to generate report from'}), 400
 
-        # 1. Generar texto con IA
         report_text = generar_reporte_ia(df, report_type)
         
-        # 2. Crear el archivo PDF
         with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_pdf:
             create_medical_report_pdf(temp_pdf.name, report_text)
             temp_pdf_path = temp_pdf.name
@@ -107,7 +106,13 @@ def generate_pdf():
         )
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        # --- ¡ESTE ES EL CÓDIGO DE DEBUG! ---
+        # 1. Imprime el error completo en los logs de Railway
+        app.logger.error(f"¡FALLO AL GENERAR PDF! Error: {e}")
+        app.logger.error(traceback.format_exc()) # Imprime el Traceback completo
+        
+        # 2. Devuelve un error al frontend
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 if __name__ == '__main__':
     # Ya no necesitamos 'with app.app_context(): db.create_all()'

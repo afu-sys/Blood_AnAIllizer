@@ -17,10 +17,12 @@ def _lab_results_to_text(df):
     lines = []
     for _, row in df.iterrows():
         row_dict = row.to_dict()
+        # --- ¡ESTA ES LA CORRECCIÓN DEL KEYERROR! ---
+        # Usamos las claves en minúscula/camelCase que app.py define
         line = (
-            f"{row_dict['Test']}: {row_dict['Value']} {row_dict['Unit']} "
-            f"(reference range {row_dict['Ref Low']}–{row_dict['Ref High']}). "
-            f"Status: {row_dict['Status']}."
+            f"{row_dict['test']}: {row_dict['value']} {row_dict['unit']} "
+            f"(reference range {row_dict['refLow']}–{row_dict['refHigh']}). "
+            f"Status: {row_dict['status']}."
         )
         lines.append(line)
     return "Here are the patient's laboratory results:\n\n" + "\n".join(lines)
@@ -51,6 +53,8 @@ def create_medical_report_pdf(output_filename, report_text):
 
     for block in blocks:
         if block.strip():
+            # --- ¡ESTA ES LA CORRECCIÓN DEL TYPO! ---
             Story.append(Paragraph(block.strip(), styles["Normal_Justified"]))
             
     doc.build(Story)
+    
