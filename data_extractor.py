@@ -1,25 +1,19 @@
 import re
 import pandas as pd
 
+# Adaptación de la celda 54 (Regex)
 def parsear_lineas_a_dataframe(lines):
-    """
-    Aplica Regex a las líneas de texto y las convierte en un DataFrame.
-    Toma la lógica de la celda 3.
-    """
-    
-    # Patrón para rangos normales (bajo - alto)
     pattern_range = (
-        r"([A-Za-z0-9ÁÉÍÓÚÜáéíóúüñ\(\)/\\-\\s\\*\\.]+?)"  # test name
-        r"\s+H?([\d.,]+(?:E\d+)?)"                   # value
-        r"\s*([a-zA-Z0-9/%µ\\.\\*]*)?"                 # unit
-        r"\s+([\d.,]+)\s*(?:-|\\s)\s*([\d.,]+)"       # ref low and high
+        r"([A-Za-z0-9ÁÉÍÓÚÜáéíóúüñ\(\)/\\-\\s\\*\\.]+?)"
+        r"\s+H?([\d.,]+(?:E\d+)?)"
+        r"\s*([a-zA-Z0-9/%µ\\.\\*]*)?"
+        r"\s+([\d.,]+)\s*(?:-|\\s)\s*([\d.,]+)"
     )
 
-    # Patrón para umbrales (< o >)
     pattern_threshold = (
         r"([A-Za-z0-9ÁÉÍÓÚÜáéíóúüñ\(\)/\\-\\s\\*\\.]+?)"
         r"\s*([<>])?\s*([\d.,]+(?:E\d+)?)"
-        r"\s*([a-zA-Z0-9/%µ\\.\\,\\^]*\s*m2|[a-zA-Z0-9/%µ\\.\\,\\^]*)?"
+        r"\s*([a-Za-z0-9/%µ\\.\\,\\^]*\s*m2|[a-zA-Z0-9/%µ\\.\\,\\^]*)?"
         r"\s*([<>])\s*([\d.,]+)"
     )
 
@@ -29,12 +23,7 @@ def parsear_lineas_a_dataframe(lines):
         if not line or line.startswith(("Page", "Página")) or not any(c.isdigit() for c in line):
             continue
         
-        # --- AÑADE ESTA LIMPIEZA MÁS FUERTE ---
-        # 1. Eliminar caracteres que no sean espacio, letra o número de base
-        # Se asegura de que no haya basura en la línea que rompa el Regex
-        line = re.sub(r'[^\w\s\.\,\-\+\(\)/\\*<>\[\]]', '', line, flags=re.UNICODE) 
-        
-        # 2. Normalizar números y símbolos de unidad
+        # Corrección: Quitar los puntos y comas que rompen el Regex.
         line = line.replace(",", ".").replace("[", "").replace("]", "").replace("*", "")
 
         # Caso 1: rangos normales
@@ -50,7 +39,7 @@ def parsear_lineas_a_dataframe(lines):
 
         # Caso 2: umbrales
         for match in re.finditer(pattern_threshold, line):
-            test, _, value, unit, sign_ref, limit = match.groups()
+            test, sign_val, value, unit, sign_ref, limit = match.groups()
             value = float(value.replace(",", ".")) if value else None
             limit = float(limit.replace(",", ".")) if limit else None
 
@@ -66,11 +55,8 @@ def parsear_lineas_a_dataframe(lines):
 
     return pd.DataFrame(data, columns=["Test", "Value", "Unit", "Ref Low", "Ref High"])
 
+# Adaptación de la celda 55 (Clasificación de Status)
 def clasificar_resultados(df):
-    """
-    Añade la columna 'Status' al DataFrame.
-    Toma la lógica de la celda 4.
-    """
     df["Status"] = df.apply(
         lambda row: (
             "Normal"
@@ -78,13 +64,22 @@ def clasificar_resultados(df):
             else (
                 "Near"
                 if (
-                    (row["Ref High"] == float("inf") and abs(row["Value"] - row["Ref Low"]) <= 0.25 * row["Ref Low"])
-                    or (row["Ref Low"] == float("-inf") and abs(row["Value"] - row["Ref High"]) <= 0.25 * row["Ref High"])
-                    or (
+                    (   # Case 1, we only have the higher ref (<X)
+                        row["Ref High"] == float("inf")
+                        and abs(row["Value"] - row["Ref Low"]) <= 0.25 * row["Ref Low"]
+                    )
+                    or ( # Case 2, we only have the lower ref (>X)
+                        row["Ref Low"] == float("-inf")
+                        and abs(row["Value"] - row["Ref High"]) <= 0.25 * row["Ref High"]
+                    )
+                    or ( # Case 3, we have the range
                         row["Ref High"] != float("inf")
                         and row["Ref Low"] != float("-inf")
                         and (row["Ref High"] - row["Ref Low"]) > 0
-                        and abs(row["Value"] - max(min(row["Value"], row["Ref High"]), row["Ref Low"]))
+                        and abs(
+                            row["Value"]
+                            - max(min(row["Value"], row["Ref High"]), row["Ref Low"])
+                        )
                         <= 0.25 * (row["Ref High"] - row["Ref Low"])
                     )
                 )

@@ -18,8 +18,6 @@ from pdf_processor import extraer_texto_de_pdf
 from data_extractor import parsear_lineas_a_dataframe, clasificar_resultados
 from report_generator import generar_reporte_ia, create_medical_report_pdf
 
-import fitz
-
 load_dotenv()
 app = Flask(__name__)
 CORS(app)
@@ -142,7 +140,6 @@ def save_timeline():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
-
 # The main event! This is the REAL analyze endpoint
 @app.route('/api/analyze', methods=['POST'])
 @jwt_required()
@@ -173,6 +170,7 @@ def analyze_reports():
             if not df.empty:
                 df = clasificar_resultados(df)
             else:
+                # El error se lanza desde aquí si no se encuentra data
                 return jsonify({'error': 'No data could be extracted from this PDF.'}), 400
         
         # Convert the data to JSON for our frontend
@@ -186,13 +184,10 @@ def analyze_reports():
         })
         
     except Exception as e:
-        print(f"FATAL EXCEPTION DURING ANALYSIS: {e}") 
-        import traceback
-        traceback.print_exc()
-        
-        # Devolvemos un error 500 al frontend para que sepa que falló
-        return jsonify({'error': 'Internal Server Error. Check server logs for details.'}), 500
-
+        # Esto es lo que verá el usuario, si algo falla
+        return jsonify({'error': f'Analysis failed due to: {str(e)}'}), 500
+    
+    
 # The REAL PDF generator endpoint
 @app.route('/api/generate-pdf', methods=['POST'])
 @jwt_required()
