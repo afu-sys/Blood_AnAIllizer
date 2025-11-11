@@ -4,6 +4,8 @@ let uploadedFiles = [];
 let analysisResults = [];
 let timelineData = [];
 
+const API_BASE_URL = 'https://bloodanaillizer-production.up.railway.app/api';
+
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
     initializeAnimations();
