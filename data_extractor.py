@@ -3,17 +3,19 @@ import pandas as pd
 
 # Adaptación de la celda 54 (Regex)
 def parsear_lineas_a_dataframe(lines):
+    # La solución es mover el guion al final de la clase de caracteres 
+    # y simplificar los escapes redundantes:
     pattern_range = (
-        r"([A-Za-z0-9ÁÉÍÓÚÜáéíóúüñ\(\)/\\-\\s\\*\\.]+?)"
+        r"([A-Za-z0-9ÁÉÍÓÚÜáéíóúüñ()/.*\s]+?)"  # Simplificado: el guion '-' ya no está en la clase.
         r"\s+H?([\d.,]+(?:E\d+)?)"
-        r"\s*([a-zA-Z0-9/%µ\\.\\*]*)?"
-        r"\s+([\d.,]+)\s*(?:-|\\s)\s*([\d.,]+)"
+        r"\s*([a-zA-Z0-9/%µ.*]*)?"
+        r"\s+([\d.,]+)\s*(?:-|\s)\s*([\d.,]+)" # Eliminado el doble escape \\s y el segundo \
     )
 
     pattern_threshold = (
-        r"([A-Za-z0-9ÁÉÍÓÚÜáéíóúüñ\(\)/\\-\\s\\*\\.]+?)"
+        r"([A-Za-z0-9ÁÉÍÓÚÜáéíóúüñ()/.*\s]+?)" # Simplificado
         r"\s*([<>])?\s*([\d.,]+(?:E\d+)?)"
-        r"\s*([a-Za-z0-9/%µ\\.\\,\\^]*\s*m2|[a-zA-Z0-9/%µ\\.\\,\\^]*)?"
+        r"\s*([a-Za-z0-9/%µ,^]*\s*m2|[a-zA-Z0-9/%µ,^]*)?"
         r"\s*([<>])\s*([\d.,]+)"
     )
 
