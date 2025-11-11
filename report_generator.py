@@ -52,7 +52,7 @@ Please write a concise medical report that follows these guidelines:
    “This report is for informational purposes only and does not replace professional medical evaluation.”
 """
     
-    if tipo_prompt == "paciente":
+    if tipo_prompt == "patient":
         # This is a simpler, clearer prompt to reduce confusion and hallucination.
         return f"""
 You are a friendly and empathetic health advisor. 
