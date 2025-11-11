@@ -29,7 +29,12 @@ def parsear_lineas_a_dataframe(lines):
         if not line or line.startswith(("Page", "Página")) or not any(c.isdigit() for c in line):
             continue
         
-        # Normalizar números
+        # --- AÑADE ESTA LIMPIEZA MÁS FUERTE ---
+        # 1. Eliminar caracteres que no sean espacio, letra o número de base
+        # Se asegura de que no haya basura en la línea que rompa el Regex
+        line = re.sub(r'[^\w\s\.\,\-\+\(\)/\\*<>\[\]]', '', line, flags=re.UNICODE) 
+        
+        # 2. Normalizar números y símbolos de unidad
         line = line.replace(",", ".").replace("[", "").replace("]", "").replace("*", "")
 
         # Caso 1: rangos normales
