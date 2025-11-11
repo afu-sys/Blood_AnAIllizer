@@ -186,8 +186,12 @@ def analyze_reports():
         })
         
     except Exception as e:
-        # Esto es lo que verá el usuario, si algo falla
-        return jsonify({'error': f'Analysis failed due to: {str(e)}'}), 500
+        print(f"FATAL EXCEPTION DURING ANALYSIS: {e}") 
+        import traceback
+        traceback.print_exc()
+        
+        # Devolvemos un error 500 al frontend para que sepa que falló
+        return jsonify({'error': 'Internal Server Error. Check server logs for details.'}), 500
 
 # The REAL PDF generator endpoint
 @app.route('/api/generate-pdf', methods=['POST'])
