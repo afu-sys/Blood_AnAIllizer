@@ -51,3 +51,5 @@ Flask-Migrate==4.0.7    # Para manejar cambios en la BD (migraciones)
 # Para Autenticación y Seguridad
 Flask-Bcrypt==1.0.1
 Flask-JWT-Extended==4.5.3 # Un wrapper de PyJWT más completo
+
+gunicorn
