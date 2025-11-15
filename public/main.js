@@ -2,7 +2,7 @@ let uploadedFiles = [];
 let analysisResults = [];
 let timelineData = []; 
 
-const API_BASE_URL = 'https://bloodanaillizer-production.up.railway.app/api';
+const API_BASE_URL = 'bloodanaillizer-production-d45d.up.railway.app/api';
 
 document.addEventListener('DOMContentLoaded', function() {
     initializeAnimations();
